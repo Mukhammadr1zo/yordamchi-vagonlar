@@ -125,3 +125,32 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 - Firewall: **80, 443** ochiq; **3100 va DB porti** tashqariga ochilmasin.
 - `serverActions.allowedOrigins` (next.config.ts) da `helper-vagons.d-railway.uz` bor — proxy `X-Forwarded-Proto`/`Host` ni uzatadi (config'da bor), shuning uchun qo'shish/tahrir/o'chirish ishlaydi.
 - Mavjud `d-railway.uz` bloklarini **o'zgartirmang** — bu blok mustaqil.
+
+---
+
+## 🤖 GitHub Actions — avtomatik deploy (CI/CD)
+
+`.github/workflows/deploy.yml` — `main`ga push qilinganda avtomatik: build tekshiradi, so'ng serverga SSH orqali `git pull` + `docker compose up -d --build`.
+
+### 1. Serverda SSH kalit yaratish (bir marta)
+```bash
+ssh-keygen -t ed25519 -C "gh-actions" -f ~/.ssh/gh_deploy -N ""
+cat ~/.ssh/gh_deploy.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+cat ~/.ssh/gh_deploy      # ⬅️ bu PRIVATE kalitni to'liq nusxalang (BEGIN...END bilan)
+```
+
+### 2. GitHub'da secret'lar qo'shish
+Repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Qiymat |
+|--------|--------|
+| `SSH_HOST` | `89.39.94.99` |
+| `SSH_USER` | `root` |
+| `SSH_KEY` | yuqoridagi **PRIVATE** kalit (to'liq matn) |
+| `SSH_PORT` | `22` (ixtiyoriy) |
+
+### 3. Tayyor
+Endi har `git push origin main` → Actions avtomatik deploy qiladi. Holatni **Actions** tab'da kuzatasiz. Qo'lda ishga tushirish: Actions → "CI & Deploy" → Run workflow.
+
+> Migratsiyalar konteyner ishga tushganda avtomatik qo'llanadi (`prisma migrate deploy`). `.env.prod` serverda qoladi (git'ga tushmaydi).

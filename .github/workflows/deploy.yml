@@ -1,0 +1,52 @@
+name: CI & Deploy
+
+# main'ga har push qilinganda: avval build tekshiriladi, keyin serverga deploy.
+# Qo'lda ham ishga tushirish mumkin (Actions tab -> Run workflow).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Bir vaqtda faqat bitta deploy ishlasin
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # 1) Production build CI'da o'tishini tekshirish (DB kerak emas — sahifalar force-dynamic)
+  build-check:
+    name: Build & tekshiruv
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Production build
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
+          AUTH_SECRET: ci-dummy-secret
+
+  # 2) Serverga deploy — SSH orqali git pull + docker rebuild
+  deploy:
+    name: Serverga deploy
+    needs: build-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/helper-vagons/yordamchi-vagonlar
+            git pull origin main
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+            docker image prune -f
