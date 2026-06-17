@@ -4,6 +4,8 @@ import { Link } from "@/i18n/navigation";
 import { ArrowLeft } from "lucide-react";
 import { WagonRecordForm } from "@/components/wagons/wagon-record-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewWagonPage({
   params,
 }: {
