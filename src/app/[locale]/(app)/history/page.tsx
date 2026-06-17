@@ -15,6 +15,8 @@ import { DeleteImportButton } from "@/components/wagons/delete-buttons";
 const d = (x: Date) => x.toISOString().slice(0, 10);
 const dt = (x: Date) => x.toISOString().slice(0, 16).replace("T", " ");
 
+export const dynamic = "force-dynamic";
+
 export default async function HistoryPage({
   params,
 }: {

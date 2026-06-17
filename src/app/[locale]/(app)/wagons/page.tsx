@@ -11,6 +11,8 @@ import { DayPicker } from "@/components/wagons/day-picker";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
+export const dynamic = "force-dynamic";
+
 export default async function WagonsPage({
   params,
   searchParams,

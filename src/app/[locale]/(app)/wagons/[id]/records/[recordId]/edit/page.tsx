@@ -8,6 +8,8 @@ import type { RecordInput } from "@/lib/wagon/types";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
+export const dynamic = "force-dynamic";
+
 export default async function EditRecordPage({
   params,
 }: {

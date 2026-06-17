@@ -2,6 +2,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { ImportForm } from "@/components/import/import-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function ImportPage({
   params,
 }: {

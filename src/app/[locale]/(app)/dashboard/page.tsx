@@ -5,6 +5,8 @@ import { Train, TriangleAlert, FileWarning, MapPin } from "lucide-react";
 import { ChartDrilldown, type DrillRow } from "@/components/charts/chart-drilldown";
 import { FlowSankey, type SankeyData } from "@/components/charts/flow-sankey";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage({
   params,
 }: {
