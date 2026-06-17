@@ -13,9 +13,10 @@ datasource db {
 // ---------- Enumlar ----------
 
 enum Role {
-  ADMIN // To'liq boshqaruv, import, tahrir
-  RAHBAR // Ko'rish + hisobot + dashboard
-  VIEWER // Faqat ko'rish + eksport
+  SUPERADMIN // Hammasi: foydalanuvchi boshqaruvi + import + tahrir + ko'rish
+  ADMIN // Hammasi, faqat foydalanuvchi boshqaruvisiz
+  RAHBAR // Faqat ko'rish (monitoring)
+  VIEWER // (eski, ishlatilmaydi)
 }
 
 enum DocStatus {
@@ -216,7 +217,7 @@ model User {
   fullName     String
   login        String   @unique
   passwordHash String
-  role         Role     @default(VIEWER)
+  role         Role     @default(RAHBAR)
   isActive     Boolean  @default(true)
   lastLogin    DateTime?
   createdAt    DateTime @default(now())

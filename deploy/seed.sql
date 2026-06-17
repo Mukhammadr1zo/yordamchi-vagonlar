@@ -25,3 +25,10 @@ INSERT INTO stations (id, code, "nameUz", "nameRu", country) VALUES
   (gen_random_uuid()::text, '740000', 'Qo''ng''irot', 'Кунград', 'O''zbekiston'),
   (gen_random_uuid()::text, '800000', 'Saryog''och (chegara)', 'Сарыагаш (граница)', 'Qozog''iston')
 ON CONFLICT (code) DO NOTHING;
+
+-- Birinchi superadmin. Login: superadmin / Parol: superadmin123
+-- ⚠️ Kirgach DARHOL parolni o'zgartiring (Foydalanuvchilar bo'limida)!
+INSERT INTO users (id, "fullName", login, "passwordHash", role) VALUES
+  (gen_random_uuid()::text, 'Super Admin', 'superadmin',
+   '$2b$10$tehA4/AxUWbMyhc.TMdbQeLO71tIbHuc8wTS8xtUBHUGDYsEnwlZC', 'SUPERADMIN')
+ON CONFLICT (login) DO NOTHING;

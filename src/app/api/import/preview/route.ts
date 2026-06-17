@@ -5,11 +5,17 @@ import { parseWorkbook } from "@/lib/import/parse";
 import { buildLookups } from "@/lib/import/lookups";
 import { validateRows } from "@/lib/import/process";
 import type { PreviewSummary } from "@/lib/import/types";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user || !can(user.role).upload) {
+      return NextResponse.json({ error: "Import uchun ruxsatingiz yo'q" }, { status: 403 });
+    }
     const form = await req.formData();
     const file = form.get("file");
     const sourceStation = (form.get("sourceStation") as string)?.trim() || null;

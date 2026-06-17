@@ -4,11 +4,17 @@ import { buildLookups } from "@/lib/import/lookups";
 import { createWagonRecord } from "@/lib/wagon/record";
 import { recomputeWagon } from "@/lib/wagon/recompute";
 import type { ParsedRow } from "@/lib/import/types";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getCurrentUser();
+    if (!user || !can(user.role).upload) {
+      return NextResponse.json({ error: "Import uchun ruxsatingiz yo'q" }, { status: 403 });
+    }
     const { batchId } = await req.json();
     if (!batchId) {
       return NextResponse.json({ error: "batchId yo'q" }, { status: 400 });

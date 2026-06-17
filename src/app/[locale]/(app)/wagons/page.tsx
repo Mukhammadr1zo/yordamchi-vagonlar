@@ -8,6 +8,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { WagonsTable, type WagonRow } from "@/components/wagons/wagons-table";
 import { WagonFilters } from "@/components/wagons/wagon-filters";
 import { DayPicker } from "@/components/wagons/day-picker";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
 
 const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
@@ -24,6 +26,7 @@ export default async function WagonsPage({
   const sp = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("wagons");
+  const perms = can((await getCurrentUser())?.role);
 
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const date = typeof sp.date === "string" ? sp.date : "";
@@ -118,16 +121,18 @@ export default async function WagonsPage({
           {t("title")}
           {date && <span className="text-muted-foreground ml-2 text-base font-normal">· {date}</span>}
         </h1>
-        <Link href="/wagons/new" className={cn(buttonVariants({ size: "sm" }))}>
-          <Plus className="size-4" />
-          {t("addManual")}
-        </Link>
+        {perms.editData && (
+          <Link href="/wagons/new" className={cn(buttonVariants({ size: "sm" }))}>
+            <Plus className="size-4" />
+            {t("addManual")}
+          </Link>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <WagonFilters />
         <DayPicker />
       </div>
-      <WagonsTable rows={rows} />
+      <WagonsTable rows={rows} canEdit={perms.editData} />
     </div>
   );
 }

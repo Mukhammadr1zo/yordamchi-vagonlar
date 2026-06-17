@@ -1,8 +1,10 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { ArrowLeft } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
 import { WagonRecordForm } from "@/components/wagons/wagon-record-form";
 import type { RecordInput } from "@/lib/wagon/types";
 
@@ -17,6 +19,7 @@ export default async function EditRecordPage({
 }) {
   const { locale, id, recordId } = await params;
   setRequestLocale(locale);
+  if (!can((await getCurrentUser())?.role).editData) redirect({ href: "/dashboard", locale });
   const t = await getTranslations("wagons");
 
   const [record, admins, stations] = await Promise.all([

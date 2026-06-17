@@ -43,7 +43,7 @@ function DocCell({ v, t }: { v: Doc; t: (k: string) => string }) {
   );
 }
 
-export function WagonsTable({ rows }: { rows: WagonRow[] }) {
+export function WagonsTable({ rows, canEdit = false }: { rows: WagonRow[]; canEdit?: boolean }) {
   const t = useTranslations("wagons");
   const tf = useTranslations("form");
   const td = useTranslations("docStatus");
@@ -81,7 +81,7 @@ export function WagonsTable({ rows }: { rows: WagonRow[] }) {
             <TableHead className="whitespace-nowrap">{tf("unloadingDoc")}</TableHead>
             <TableHead className="whitespace-nowrap">{t("station5065")}</TableHead>
             <TableHead className="whitespace-nowrap text-center">{t("loadCount")}</TableHead>
-            <TableHead className="text-right">{tc("actions")}</TableHead>
+            {canEdit && <TableHead className="text-right">{tc("actions")}</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -116,20 +116,22 @@ export function WagonsTable({ rows }: { rows: WagonRow[] }) {
               </TableCell>
               <TableCell className="whitespace-nowrap">{dash(w.station5065)}</TableCell>
               <TableCell className="text-center tabular-nums">{w.loadCount}</TableCell>
-              <TableCell>
-                <div className="flex items-center justify-end gap-1">
-                  {w.latestRecordId && (
-                    <Link
-                      href={`/wagons/${w.id}/records/${w.latestRecordId}/edit`}
-                      className={editCls}
-                      aria-label={tc("edit")}
-                    >
-                      <Pencil className="size-4" />
-                    </Link>
-                  )}
-                  <DeleteWagonButton wagonId={w.id} number={w.number} compact />
-                </div>
-              </TableCell>
+              {canEdit && (
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1">
+                    {w.latestRecordId && (
+                      <Link
+                        href={`/wagons/${w.id}/records/${w.latestRecordId}/edit`}
+                        className={editCls}
+                        aria-label={tc("edit")}
+                      >
+                        <Pencil className="size-4" />
+                      </Link>
+                    )}
+                    <DeleteWagonButton wagonId={w.id} number={w.number} compact />
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

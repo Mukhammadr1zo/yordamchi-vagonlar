@@ -11,6 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DeleteImportButton } from "@/components/wagons/delete-buttons";
+import { redirect } from "@/i18n/navigation";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
 
 const d = (x: Date) => x.toISOString().slice(0, 10);
 const dt = (x: Date) => x.toISOString().slice(0, 16).replace("T", " ");
@@ -24,6 +27,7 @@ export default async function HistoryPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  if (!can((await getCurrentUser())?.role).upload) redirect({ href: "/dashboard", locale });
   const t = await getTranslations("history");
   const tc = await getTranslations("common");
 

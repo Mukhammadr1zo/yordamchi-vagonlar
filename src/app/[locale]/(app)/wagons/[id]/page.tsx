@@ -1,6 +1,8 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -42,6 +44,7 @@ export default async function WagonCardPage({
   const td = await getTranslations("docStatus");
   const tc = await getTranslations("common");
   const tf = await getTranslations("form");
+  const canEdit = can((await getCurrentUser())?.role).editData;
 
   const wagon = await prisma.wagon.findUnique({
     where: { id },
@@ -102,18 +105,20 @@ export default async function WagonCardPage({
             без док.
           </Badge>
         )}
-        <div className="ml-auto flex gap-2">
-          {wagon.records[0] && (
-            <Link
-              href={`/wagons/${wagon.id}/records/${wagon.records[0].id}/edit`}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
-              <Pencil className="size-4" />
-              {t("editLatest")}
-            </Link>
-          )}
-          <DeleteWagonButton wagonId={wagon.id} number={wagon.number} />
-        </div>
+        {canEdit && (
+          <div className="ml-auto flex gap-2">
+            {wagon.records[0] && (
+              <Link
+                href={`/wagons/${wagon.id}/records/${wagon.records[0].id}/edit`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                <Pencil className="size-4" />
+                {t("editLatest")}
+              </Link>
+            )}
+            <DeleteWagonButton wagonId={wagon.id} number={wagon.number} />
+          </div>
+        )}
       </div>
 
       {/* Detal kartalar */}
@@ -197,7 +202,7 @@ export default async function WagonCardPage({
                         {k}
                       </TableHead>
                     ))}
-                    <TableHead className="text-right">{tc("actions")}</TableHead>
+                    {canEdit && <TableHead className="text-right">{tc("actions")}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -211,18 +216,20 @@ export default async function WagonCardPage({
                             {raw[k] ?? "—"}
                           </TableCell>
                         ))}
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Link
-                              href={`/wagons/${wagon.id}/records/${r.id}/edit`}
-                              className="text-muted-foreground hover:text-foreground p-1"
-                              aria-label={tc("edit")}
-                            >
-                              <Pencil className="size-4" />
-                            </Link>
-                            <DeleteRecordButton recordId={r.id} />
-                          </div>
-                        </TableCell>
+                        {canEdit && (
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              <Link
+                                href={`/wagons/${wagon.id}/records/${r.id}/edit`}
+                                className="text-muted-foreground hover:text-foreground p-1"
+                                aria-label={tc("edit")}
+                              >
+                                <Pencil className="size-4" />
+                              </Link>
+                              <DeleteRecordButton recordId={r.id} />
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -251,7 +258,7 @@ export default async function WagonCardPage({
                   <TableHead>назначение</TableHead>
                   <TableHead>дата выгр.</TableHead>
                   <TableHead>СМГС</TableHead>
-                  <TableHead className="text-right">{tc("actions")}</TableHead>
+                  {canEdit && <TableHead className="text-right">{tc("actions")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -267,18 +274,20 @@ export default async function WagonCardPage({
                     <TableCell className="text-xs">
                       {td(r.loadingDocStatus)} / {td(r.unloadingDocStatus)}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Link
-                          href={`/wagons/${wagon.id}/records/${r.id}/edit`}
-                          className="text-muted-foreground hover:text-foreground p-1"
-                          aria-label={tc("edit")}
-                        >
-                          <Pencil className="size-4" />
-                        </Link>
-                        <DeleteRecordButton recordId={r.id} />
-                      </div>
-                    </TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/wagons/${wagon.id}/records/${r.id}/edit`}
+                            className="text-muted-foreground hover:text-foreground p-1"
+                            aria-label={tc("edit")}
+                          >
+                            <Pencil className="size-4" />
+                          </Link>
+                          <DeleteRecordButton recordId={r.id} />
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

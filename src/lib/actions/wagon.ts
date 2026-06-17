@@ -7,6 +7,17 @@ import { createWagonRecord, updateWagonRecordData } from "@/lib/wagon/record";
 import { recomputeWagon } from "@/lib/wagon/recompute";
 import type { ParsedRow } from "@/lib/import/types";
 import type { ActionResult, RecordInput } from "@/lib/wagon/types";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { can } from "@/lib/auth/permissions";
+
+/** Tahrir huquqini tekshirish (SUPERADMIN/ADMIN). Ruxsat bo'lmasa xato qaytaradi. */
+async function ensureEditor(): Promise<ActionResult | null> {
+  const user = await getCurrentUser();
+  if (!user || !can(user.role).editData) {
+    return { ok: false, error: "Bu amal uchun ruxsatingiz yo'q" };
+  }
+  return null;
+}
 
 const norm = (s: string | null | undefined) =>
   (s ?? "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -44,6 +55,8 @@ function revalidateAll(wagonId?: string) {
 
 export async function createRecordAction(input: RecordInput): Promise<ActionResult> {
   try {
+    const denied = await ensureEditor();
+    if (denied) return denied;
     const p = toParsed(input);
     if (!p.wagonNumber) return { ok: false, error: "Vagon raqami kiritilmagan" };
     if (!input.reportDate) return { ok: false, error: "Hisobot sanasi kiritilmagan" };
@@ -76,6 +89,8 @@ export async function updateRecordAction(
   input: RecordInput,
 ): Promise<ActionResult> {
   try {
+    const denied = await ensureEditor();
+    if (denied) return denied;
     const p = toParsed(input);
     if (!p.wagonNumber) return { ok: false, error: "Vagon raqami kiritilmagan" };
 
@@ -104,6 +119,8 @@ export async function updateRecordAction(
 
 export async function deleteRecordAction(recordId: string): Promise<ActionResult> {
   try {
+    const denied = await ensureEditor();
+    if (denied) return denied;
     const rec = await prisma.wagonRecord.findUnique({
       where: { id: recordId },
       select: { wagonId: true },
@@ -124,6 +141,8 @@ export async function deleteRecordAction(recordId: string): Promise<ActionResult
 
 export async function deleteWagonAction(wagonId: string): Promise<ActionResult> {
   try {
+    const denied = await ensureEditor();
+    if (denied) return denied;
     await prisma.wagon.delete({ where: { id: wagonId } });
     revalidateAll();
     return { ok: true };
@@ -135,6 +154,8 @@ export async function deleteWagonAction(wagonId: string): Promise<ActionResult> 
 /** Import partiyasini va undan kelgan yozuvlarni o'chiradi, vagonlarni qayta hisoblaydi. */
 export async function deleteImportBatchAction(batchId: string): Promise<ActionResult> {
   try {
+    const denied = await ensureEditor();
+    if (denied) return denied;
     const recs = await prisma.wagonRecord.findMany({
       where: { importBatchId: batchId },
       select: { wagonId: true },

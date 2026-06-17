@@ -145,6 +145,27 @@
     "deleteImport": "Importni o'chirish",
     "deleteImportConfirm": "bu import va undan kelgan barcha yozuvlar o'chiriladi. Davom etilsinmi?"
   },
+  "auth": {
+    "title": "Tizimga kirish",
+    "login": "Login",
+    "password": "Parol",
+    "submit": "Kirish",
+    "logout": "Chiqish"
+  },
+  "users": {
+    "title": "Foydalanuvchilar",
+    "add": "Foydalanuvchi qo'shish",
+    "editTitle": "Foydalanuvchini tahrirlash",
+    "fullName": "F.I.Sh.",
+    "login": "Login",
+    "password": "Parol",
+    "passwordEdit": "Yangi parol",
+    "role": "Rol",
+    "status": "Holat",
+    "active": "Faol",
+    "inactive": "Faol emas",
+    "deleteConfirm": "Foydalanuvchi o'chirilsinmi?"
+  },
   "docStatus": {
     "SMGS": "СМГС bilan",
     "NO_DOC": "Hujjatsiz",

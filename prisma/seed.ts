@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -46,9 +47,21 @@ async function main() {
     });
   }
 
+  console.log("Seeding superadmin...");
+  await prisma.user.upsert({
+    where: { login: "superadmin" },
+    update: {},
+    create: {
+      login: "superadmin",
+      fullName: "Super Admin",
+      role: "SUPERADMIN",
+      passwordHash: await bcrypt.hash("superadmin123", 10),
+    },
+  });
+
   const admCount = await prisma.administration.count();
   const stCount = await prisma.station.count();
-  console.log(`Done. Administrations: ${admCount}, Stations: ${stCount}`);
+  console.log(`Done. Administrations: ${admCount}, Stations: ${stCount}. Login: superadmin / superadmin123`);
 }
 
 main()
