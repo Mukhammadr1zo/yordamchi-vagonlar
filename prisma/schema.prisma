@@ -1,0 +1,243 @@
+// Ko'rinmas (yordamchi) vagonlar — ma'lumotlar modeli
+// TZ 9-bo'lim. PostgreSQL + Prisma.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enumlar ----------
+
+enum Role {
+  ADMIN // To'liq boshqaruv, import, tahrir
+  RAHBAR // Ko'rish + hisobot + dashboard
+  VIEWER // Faqat ko'rish + eksport
+}
+
+enum DocStatus {
+  SMGS // СМГС hujjati bilan
+  NO_DOC // Hujjatsiz (без документа)
+  UNKNOWN // Aniqlanmagan
+}
+
+enum WagonStatus {
+  IN_COUNTRY // Hududda
+  DEPARTED // Chiqib ketgan
+}
+
+enum ImportStatus {
+  PREVIEW // Ko'rib chiqilmoqda (hali saqlanmagan)
+  COMMITTED // Tasdiqlangan
+  ROLLEDBACK // Bekor qilingan
+}
+
+enum RowStatus {
+  OK
+  WARNING
+  ERROR
+}
+
+// ---------- Ma'lumotnomalar ----------
+
+/// Davlat / administratsiya (собственник). C(код вагон)+D(собственник) shu yerga birlashadi.
+model Administration {
+  id        String   @id @default(cuid())
+  code      String   @unique // davlat kodi (код вагон)
+  nameUz    String
+  nameRu    String
+  country   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  wagons Wagon[]
+
+  @@map("administrations")
+}
+
+/// Stansiya
+model Station {
+  id       String   @id @default(cuid())
+  code     String   @unique
+  nameUz   String
+  nameRu   String
+  railway  String?
+  country  String?
+  isActive Boolean  @default(true)
+
+  // Wagon (joriy holat) bog'lanishlari
+  wagonsFact Wagon[] @relation("WagonFactStation")
+  wagons5065 Wagon[] @relation("Wagon5065Station")
+
+  // WagonRecord (kunlik) bog'lanishlari
+  recordsFact        WagonRecord[] @relation("RecordFactStation")
+  records5065        WagonRecord[] @relation("Record5065Station")
+  recordsLoading     WagonRecord[] @relation("RecordLoadingStation")
+  recordsDestination WagonRecord[] @relation("RecordDestinationStation")
+
+  @@map("stations")
+}
+
+// ---------- Asosiy entitetlar ----------
+
+/// Vagon (master, joriy holat — kunlik yozuvlardan hosil bo'ladi)
+model Wagon {
+  id     String @id @default(cuid())
+  number String @unique // 8 xonali vagon raqami
+
+  administrationId String?
+  administration   Administration? @relation(fields: [administrationId], references: [id])
+
+  currentFactStationId String?
+  currentFactStation   Station? @relation("WagonFactStation", fields: [currentFactStationId], references: [id])
+
+  current5065StationId String?
+  current5065Station   Station? @relation("Wagon5065Station", fields: [current5065StationId], references: [id])
+
+  // Stansiya ma'lumotnomaga bog'lanmagan bo'lsa ham ko'rsatish uchun xom matn
+  currentFactStationText String?
+  current5065StationText String?
+  administrationText     String?
+
+  wagonType String? // Vagon turi (род): Крытый, Цистерна... — qo'lda kiritiladi
+
+  totalLoadCount   Int         @default(0) // tizim hisoblaydi
+  entryDate        DateTime? // kirish
+  exitDate         DateTime? // chiqish
+  lastReportDate   DateTime?
+  status           WagonStatus @default(IN_COUNTRY)
+  isDiscrepant     Boolean     @default(false) // факт != 5065
+  hasUndocumented  Boolean     @default(false) // hujjatsiz harakat bo'lganmi
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  records WagonRecord[]
+
+  @@index([isDiscrepant])
+  @@index([status])
+  @@index([administrationId])
+  @@map("wagons")
+}
+
+/// Kunlik yozuv (snapshot) — Excel'dagi bitta qator. Harakat tarixi shulardan iborat.
+model WagonRecord {
+  id String @id @default(cuid())
+
+  wagonId String
+  wagon   Wagon  @relation(fields: [wagonId], references: [id], onDelete: Cascade)
+
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  reportDate   DateTime // hisobot sanasi (import paytida kiritiladi)
+  sourceStation String? // qaysi stansiya yuborgan
+
+  // Xom matn (ma'lumotnomaga bog'lanmagan holatda ham saqlanadi)
+  factStationText        String?
+  station5065Text        String?
+  loadingStationText     String?
+  destinationStationText String?
+  administrationText     String?
+
+  factStationId String?
+  factStation   Station? @relation("RecordFactStation", fields: [factStationId], references: [id])
+
+  station5065Id String?
+  station5065   Station? @relation("Record5065Station", fields: [station5065Id], references: [id])
+
+  loadingStationId String?
+  loadingStation   Station?   @relation("RecordLoadingStation", fields: [loadingStationId], references: [id])
+  loadingDate      DateTime?
+  loadingDocStatus DocStatus  @default(UNKNOWN)
+
+  trainIndex          String?
+  destinationStationId String?
+  destinationStation   Station?  @relation("RecordDestinationStation", fields: [destinationStationId], references: [id])
+
+  isDiscrepant Boolean @default(false)
+
+  unloadingDate      DateTime?
+  unloadingDocStatus DocStatus @default(UNKNOWN)
+
+  reportedLoadCount Int? // M ustun (faqat ma'lumot)
+  isNewLoading      Boolean @default(false) // tizim aniqlagan yangi yuklash
+  rawData           Json? // Excel qatorining to'liq nusxasi (barcha ustunlar)
+  createdAt         DateTime @default(now())
+
+  @@index([wagonId, reportDate])
+  @@index([reportDate])
+  @@map("wagon_records")
+}
+
+// ---------- Import ----------
+
+model ImportBatch {
+  id            String       @id @default(cuid())
+  fileName      String
+  sourceStation String?
+  reportDate    DateTime
+  uploadedById  String?
+  uploadedBy    User?        @relation(fields: [uploadedById], references: [id])
+  uploadedAt    DateTime     @default(now())
+  totalRows     Int          @default(0)
+  successRows   Int          @default(0)
+  warningRows   Int          @default(0)
+  errorRows     Int          @default(0)
+  status        ImportStatus @default(PREVIEW)
+
+  rows    ImportRow[]
+  records WagonRecord[]
+
+  @@index([reportDate])
+  @@map("import_batches")
+}
+
+model ImportRow {
+  id            String      @id @default(cuid())
+  importBatchId String
+  importBatch   ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  rowNumber     Int
+  rawJson       Json
+  status        RowStatus   @default(OK)
+  messages      String[]    @default([])
+
+  @@index([importBatchId])
+  @@map("import_rows")
+}
+
+// ---------- Foydalanuvchilar ----------
+
+model User {
+  id           String   @id @default(cuid())
+  fullName     String
+  login        String   @unique
+  passwordHash String
+  role         Role     @default(VIEWER)
+  isActive     Boolean  @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+
+  importBatches ImportBatch[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  entity     String
+  entityId   String?
+  action     String
+  beforeJson Json?
+  afterJson  Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}

@@ -1,0 +1,10 @@
+# Caddy alternativi — avtomatik HTTPS (Let's Encrypt) bilan, eng oddiy yo'l.
+# Joylashtirish: /etc/caddy/Caddyfile ga qo'shing, keyin: sudo systemctl reload caddy
+# Caddy 80/443 ni o'zi boshqaradi va sertifikatni avtomatik oladi.
+
+helper-vagons.d-railway.uz {
+    reverse_proxy 127.0.0.1:3100
+    request_body {
+        max_size 25MB
+    }
+}

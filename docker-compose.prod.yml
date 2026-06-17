@@ -1,0 +1,43 @@
+# Production (o'z serverda) — Next.js ilova + PostgreSQL.
+# Ishga tushirish:  docker compose -f docker-compose.prod.yml up -d --build
+#
+# DIQQAT: parol va AUTH_SECRET ni .env.prod faylida o'zgartiring!
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: vagon_db_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vagon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?parol kerak}
+      POSTGRES_DB: ${POSTGRES_DB:-vagon_db}
+    volumes:
+      - vagon_pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vagon} -d ${POSTGRES_DB:-vagon_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vagon_app_prod
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-vagon}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vagon_db}?schema=public"
+      AUTH_SECRET: ${AUTH_SECRET:?secret kerak}
+      AUTH_URL: ${AUTH_URL:-https://helper-vagons.d-railway.uz}
+      NODE_ENV: production
+    ports:
+      # Faqat localhost'ga (127.0.0.1) — tashqaridan ko'rinmaydi, NGINX orqali ochiladi.
+      # Host port 3100 — d-railway.uz analitika platformasi (3000/3001) bilan to'qnashmasligi uchun.
+      - "127.0.0.1:3100:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  vagon_pgdata_prod:
