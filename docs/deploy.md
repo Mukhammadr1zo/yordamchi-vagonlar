@@ -74,10 +74,9 @@ docker compose -f docker-compose.prod.yml ps
 curl -I http://127.0.0.1:3100/uz/dashboard      # 200 yoki 307
 ```
 
-Ma'lumotnomani to'ldirish (bir marta — davlatlar/stansiyalar):
+Ma'lumotnomani to'ldirish (bir marta — davlatlar/stansiyalar). Production image'da `tsx` yo'q, shuning uchun SQL orqali (db konteyner ichida):
 ```bash
-docker compose -f docker-compose.prod.yml exec app node node_modules/tsx/dist/cli.mjs prisma/seed.ts || \
-docker compose -f docker-compose.prod.yml exec app node node_modules/prisma/build/index.js db seed
+docker compose -f docker-compose.prod.yml exec -T db psql -U vagon -d vagon_db < deploy/seed.sql
 ```
 
 ---
